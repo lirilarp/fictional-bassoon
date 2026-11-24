@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111916">
+  <link rel="icon" href="data:,">
+  <title>Last Light — Wilderness Protocol</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #101714;
+      color: #e7e9dc;
+      font-synthesis: none;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 60% 5%, rgba(84, 105, 75, .18), transparent 44rem),
+        #101714;
+    }
+
+    button { font: inherit; }
+
+    .shell { max-width: 1450px; margin: auto; padding: 22px clamp(14px, 3vw, 40px) 30px; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 2px 0 18px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border: 1px solid #718268;
+      border-radius: 50%;
+      color: #cad3ad;
+      font-size: 19px;
+    }
+    .eyebrow, .label { color: #9aa392; font-size: 10px; font-weight: 750; letter-spacing: .16em; text-transform: uppercase; }
+    h1 { margin: 2px 0 0; font-size: 17px; letter-spacing: .12em; }
+    .header-meta { display: flex; align-items: center; gap: 18px; color: #aab1a5; font-size: 12px; }
+    .live { color: #b6d78e; }
+    .live::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: #a6c97b; box-shadow: 0 0 12px #a6c97b; }
+
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 286px; gap: 15px; }
+    .game-panel, .card {
+      overflow: hidden;
+      border: 1px solid #303a32;
+      border-radius: 8px;
+      background: #171f1b;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, .22);
+    }
+    .game-top {
+      display: flex;
+      min-height: 47px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      border-bottom: 1px solid #303a32;
+      color: #aab1a5;
+      font-size: 11px;
+    }
+    .zone { color: #e1d3a2; font-weight: 700; }
+    .canvas-wrap { position: relative; background: #202c24; }
+    canvas { display: block; width: 100%; aspect-ratio: 16 / 9; cursor: crosshair; }
+    .game-overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      padding: 25px;
+      place-items: center;
+      background: rgba(8, 13, 11, .77);
+      text-align: center;
+      backdrop-filter: blur(5px);
+    }
+    .game-overlay[hidden] { display: none; }
+    .overlay-content { max-width: 430px; }
+    .overlay-content .eyebrow { color: #b5c991; }
+    .overlay-content h2 { margin: 10px 0; font-family: Georgia, serif; font-size: clamp(30px, 5vw, 48px); font-weight: 500; }
+    .overlay-content p { color: #b5bdb0; font-size: 14px; line-height: 1.65; }
+    .primary {
+      margin-top: 12px;
+      padding: 11px 20px;
+      border: 1px solid #b1c18e;
+      border-radius: 4px;
+      background: #a6b887;
+      color: #182017;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .primary:hover { background: #c2d09f; }
+
+    .game-footer {
+      display: flex;
+      min-height: 46px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 15px;
+      color: #aab1a5;
+      font-size: 11px;
+    }
+    .game-footer strong { color: #e5e8dc; }
+    .key {
+      display: inline-block;
+      min-width: 21px;
+      padding: 3px 5px;
+      border: 1px solid #455047;
+      border-radius: 3px;
+      color: #e1e4d7;
+      text-align: center;
+    }
+
+    aside { display: grid; align-content: start; gap: 12px; }
+    .card { padding: 15px; }
+    .card-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .card-heading h2 { margin: 0; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+    .subtle { color: #858f84; font-size: 10px; }
+    .meter { margin: 11px 0; }
+    .meter-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; color: #b4bbae; font-size: 11px; }
+    .meter-head output { color: #e4e6d9; font-variant-numeric: tabular-nums; }
+    .track { height: 5px; overflow: hidden; border-radius: 5px; background: #303a32; }
+    .fill { height: 100%; width: 100%; border-radius: inherit; background: #b2c98b; transition: width .18s linear; }
+    .fill.health { background: #d98c76; }
+    .fill.stamina { background: #9aafbd; }
+    .fill.mental { background: #b8c982; }
+    .fill.mental.stressed { background: #d7a268; }
+    .mental-note { min-height: 13px; margin-top: 8px; color: #a8b48e; font-size: 10px; line-height: 1.4; }
+    .inventory { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    .item {
+      padding: 9px 5px;
+      border: 1px solid #303a32;
+      border-radius: 4px;
+      background: #1d2721;
+      color: #aeb7a7;
+      font-size: 9px;
+      text-align: center;
+      text-transform: uppercase;
+    }
+    .item output { display: block; margin-top: 4px; color: #e5e8dc; font-size: 14px; font-weight: 700; }
+    .objective {
+      padding: 10px;
+      border-left: 2px solid #aebf88;
+      background: #1e2821;
+      color: #c2c9b8;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .objective strong { display: block; margin-bottom: 4px; color: #e1e4d7; }
+    .feed { display: grid; gap: 8px; max-height: 102px; overflow: hidden; color: #aeb6a7; font-size: 10px; line-height: 1.4; }
+    .feed p { margin: 0; }
+    .feed p:first-child { color: #d8ddce; }
+    .breath-card { display: flex; align-items: center; gap: 11px; }
+    .breath-ring { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border: 1px solid #52634d; border-radius: 50%; color: #c4d29e; font-size: 13px; transition: transform 1s ease-in-out; }
+    .breathing .breath-ring { transform: scale(1.17); border-color: #bed58e; box-shadow: 0 0 15px rgba(190, 213, 142, .25); }
+    .breath-copy { color: #aeb6a7; font-size: 10px; line-height: 1.5; }
+    .breath-copy strong { display: block; color: #e0e5d7; font-size: 11px; }
+    .hint { margin: 12px 0 0; color: #899487; font-size: 10px; line-height: 1.55; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+
+    @media (max-width: 850px) {
+      .layout { grid-template-columns: minmax(0, 1fr) 250px; gap: 10px; }
+      .shell { padding-inline: 14px; }
+    }
+    @media (max-width: 650px) {
+      header { align-items: flex-start; }
+      .header-meta { gap: 9px; font-size: 10px; }
+      .layout { grid-template-columns: 1fr; }
+      aside { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      aside .card:first-child { grid-row: span 2; }
+      .game-footer { flex-wrap: wrap; }
+    }
+    @media (max-width: 420px) {
+      .header-meta span:nth-child(2) { display: none; }
+      aside { grid-template-columns: 1fr; }
+      aside .card:first-child { grid-row: auto; }
+      .game-footer { font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">✳</div>
+        <div><div class="eyebrow">Field operations · 07</div><h1>LAST LIGHT</h1></div>
+      </div>
+      <div class="header-meta"><span class="live">FIELD LINK ACTIVE</span><span id="clock">DAY 01 · 06:00</span></div>
+    </header>
+
+    <div class="layout">
+      <section class="game-panel" aria-label="Survival game">
+        <div class="game-top"><span class="zone" id="zone">STARTER CAMP · SAFE</span><span id="weather">CLEAR · 12°C</span></div>
+        <div class="canvas-wrap">
+          <canvas id="world" width="960" height="540" aria-label="Wilderness game world. Move with WASD, aim with mouse, and click to fire."></canvas>
+          <div class="game-overlay" id="overlay">
+            <div class="overlay-content">
+              <div class="eyebrow">Quarantine perimeter breached</div>
+              <h2 id="overlay-title">The long way home.</h2>
+              <p id="overlay-copy">The valley has gone quiet. Gather supplies, keep your head clear, and bring the old relay station back online. Out there, every sound carries.</p>
+              <button class="primary" id="start-button">ENTER THE VALLEY</button>
+              <p class="subtle">A small-screen wilderness survival game · Solo field exercise</p>
+            </div>
+          </div>
+        </div>
+        <div class="game-footer">
+          <span><span class="key">W A S D</span> move</span>
+          <span><span class="key">MOUSE</span> aim / fire</span>
+          <span><span class="key">E</span> interact</span>
+          <span><span class="key">B</span> breathe</span>
+          <span id="aim-status">WEAPON: SERVICE PISTOL</span>
+        </div>
+      </section>
+
+      <aside>
+        <section class="card">
+          <div class="card-heading"><h2>Field condition</h2><span class="subtle">LIVE</span></div>
+          <div class="meter"><div class="meter-head"><span>VITALS</span><output id="health-value">100</output></div><div class="track"><div class="fill health" id="health-bar"></div></div></div>
+          <div class="meter"><div class="meter-head"><span>STAMINA</span><output id="stamina-value">100</output></div><div class="track"><div class="fill stamina" id="stamina-bar"></div></div></div>
+          <div class="meter"><div class="meter-head"><span>NEURO-STABILITY</span><output id="mental-value">100</output></div><div class="track"><div class="fill mental" id="mental-bar"></div></div><div class="mental-note" id="mental-note">Steady hands · clear head</div></div>
+          <div class="meter"><div class="meter-head"><span>HUNGER</span><output id="hunger-value">82</output></div><div class="track"><div class="fill" id="hunger-bar"></div></div></div>
+          <div class="meter"><div class="meter-head"><span>HYDRATION</span><output id="water-value">76</output></div><div class="track"><div class="fill" id="water-bar"></div></div></div>
+          <div class="meter"><div class="meter-head"><span>BLOOD VOLUME</span><output id="blood-value">100</output></div><div class="track"><div class="fill health" id="blood-bar"></div></div></div>
+          <div class="mental-note" id="injury-note">No active wounds · pain 0 · shock 0</div>
+        </section>
+
+        <section class="card">
+          <div class="card-heading"><h2>Pack</h2><span class="subtle">FIELD KIT</span></div>
+          <div class="inventory">
+            <div class="item">Rounds<output id="ammo-value">12 / 36</output></div>
+            <div class="item">Bandages<output id="bandage-value">2</output></div>
+            <div class="item">Rations<output id="ration-value">1</output></div>
+            <div class="item">Tourniquet<output id="tourniquet-value">1</output></div>
+          </div>
+          <p class="hint">Click to fire · <span class="key">R</span> reload · <span class="key">Q</span> dress wound · <span class="key">T</span> tourniquet · <span class="key">F</span> eat ration</p>
+        </section>
+
+        <section class="card">
+          <div class="card-heading"><h2>Current task</h2><span class="subtle">01 / 03</span></div>
+          <div class="objective" id="objective"><strong>Restore the valley relay</strong>Find 3 supply caches, then reach the radio tower in the north-east.</div>
+          <p class="hint" id="distance">Relay bearing: NE · 2.1 km</p>
+        </section>
+
+        <section class="card breath-card" id="breath-card">
+          <div class="breath-ring" id="breath-ring" aria-hidden="true">B</div>
+          <div class="breath-copy"><strong id="breath-title">Controlled breathing</strong><span id="breath-copy">Hold B · 4s inhale / 4s hold / 4s exhale</span></div>
+        </section>
+
+        <section class="card">
+          <div class="card-heading"><h2>Field notes</h2><span class="subtle">RADIO LOG</span></div>
+          <div class="feed" id="feed" aria-live="polite"><p>06:00 — Shelter is secure. Take a breath before heading out.</p></div>
+        </section>
+      </aside>
+    </div>
+    <p class="sr-only" id="status" aria-live="polite"></p>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+      const canvas = document.querySelector("#world");
+      const ctx = canvas.getContext("2d");
+      const overlay = document.querySelector("#overlay");
+      const status = document.querySelector("#status");
+      const W = canvas.width;
+      const H = canvas.height;
+      const world = { width: 3200, height: 2200 };
+      const camp = { x: 470, y: 1120, radius: 205 };
+      const relay = { x: 2780, y: 320 };
+      const keys = new Set();
+      const pointers = { x: W / 2, y: H / 2 };
+      const trees = [];
+      let state;
+      let previousTime = 0;
+      let visualTime = 0;
+      let shootingCooldown = 0;
+
+      for (let i = 0; i < 185; i++) {
+        const x = 70 + ((i * 193 + (i % 7) * 47) % (world.width - 140));
+        const y = 55 + ((i * 317 + (i % 11) * 31) % (world.height - 110));
+        if (Math.hypot(x - camp.x, y - camp.y) > camp.radius + 35) trees.push({ x, y, size: 9 + (i % 10) });
+      }
+
+      function freshState() {
+        return {
+          running: false, elapsed: 0, player: { x: camp.x, y: camp.y, health: 100, blood: 100, pain: 0, shock: 0, wounds: [], stamina: 100, mental: 100, hunger: 82, water: 76, ammo: 12, reserve: 36, bandages: 2, tourniquets: 1, rations: 1 },
+          enemies: [
+            { x: 1190, y: 930, type: "raider", health: 2, cooldown: 1.4, alive: true },
+            { x: 1690, y: 1330, type: "raider", health: 2, cooldown: 2.5, alive: true },
+            { x: 2290, y: 720, type: "raider", health: 2, cooldown: 1.1, alive: true },
+            { x: 1810, y: 410, type: "wolf", health: 2, cooldown: 0, alive: true },
+            { x: 2510, y: 1130, type: "wolf", health: 2, cooldown: 0, alive: true }
+          ],
+          bullets: [], caches: [{ x: 915, y: 760 }, { x: 1515, y: 1610 }, { x: 2260, y: 1350 }, { x: 2050, y: 520 }],
+          collected: 0, breathing: false, breathTime: 0, focusUntil: 0, feed: [], shaking: 0, won: false
+        };
+      }
+      state = freshState();
+
+      function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+      function distance(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+      function safe() { return distance(state.player, camp) < camp.radius; }
+      function nowClock() { return `DAY 01 · ${String(6 + Math.floor(state.elapsed / 60) % 24).padStart(2, "0")}:${String(Math.floor(state.elapsed % 60)).padStart(2, "0")}`; }
+      function night() { return (state.elapsed % 240) > 155; }
+      function log(message) {
+        state.feed.unshift(`${nowClock().split(" · ")[1]} — ${message}`);
+        state.feed.length = Math.min(state.feed.length, 5);
+        document.querySelector("#feed").replaceChildren(...state.feed.map((line) => {
+          const entry = document.createElement("p");
+          entry.textContent = line;
+          return entry;
+        }));
+        status.textContent = message;
+      }
+      function camera() {
+        const p = state.player;
+        return { x: clamp(p.x - W / 2, 0, world.width - W), y: clamp(p.y - H / 2, 0, world.height - H) };
+      }
+      function setMeter(name, value) {
+        const rounded = Math.round(value);
+        document.querySelector(`#${name}-value`).textContent = rounded;
+        document.querySelector(`#${name}-bar`).style.width = `${clamp(value, 0, 100)}%`;
+      }
+
+      function updateHud() {
+        const p = state.player;
+        setMeter("health", p.health);
+        setMeter("stamina", p.stamina);
+        setMeter("mental", p.mental);
+        setMeter("hunger", p.hunger);
+        setMeter("water", p.water);
+        document.querySelector("#blood-value").textContent = Math.round(p.blood);
+        document.querySelector("#blood-bar").style.width = `${clamp(p.blood, 0, 100)}%`;
+        document.querySelector("#mental-bar").classList.toggle("stressed", p.mental < 55);
+        document.querySelector("#ammo-value").textContent = `${p.ammo} / ${p.reserve}`;
+        document.querySelector("#bandage-value").textContent = p.bandages;
+        document.querySelector("#tourniquet-value").textContent = p.tourniquets;
+        document.querySelector("#ration-value").textContent = p.rations;
+        document.querySelector("#clock").textContent = nowClock();
+        const isSafe = safe();
+        document.querySelector("#zone").textContent = isSafe ? "STARTER CAMP · SAFE" : night() ? "NORTHERN WOOD · NIGHTFALL" : "QUARANTINE VALLEY · EXPOSED";
+        document.querySelector("#zone").style.color = isSafe ? "#b9d295" : night() ? "#c39d78" : "#e1d3a2";
+        document.querySelector("#weather").textContent = night() ? "COLD FRONT · 4°C" : "CLEAR · 12°C";
+        const note = p.mental >= 80 ? "Steady hands · clear head" : p.mental >= 55 ? "Uneasy · fine motor control slipping" : p.mental >= 30 ? "Traumatized · tremors affecting aim" : p.mental >= 10 ? "Severe panic · auditory distortions" : "Breakdown · visual shadows / blackout";
+        document.querySelector("#mental-note").textContent = state.breathing ? "Breathing in rhythm · tremors suppressed" : note;
+        const activeWound = p.wounds.find((wound) => wound.bleeding > .02);
+        document.querySelector("#injury-note").textContent = activeWound
+          ? `${activeWound.site} ${activeWound.type} · ${activeWound.severity} bleed · pain ${Math.round(p.pain)} · shock ${Math.round(p.shock)}`
+          : p.wounds.length
+            ? `Bleeding controlled · pain ${Math.round(p.pain)} · shock ${Math.round(p.shock)}`
+            : `No active wounds · pain ${Math.round(p.pain)} · shock ${Math.round(p.shock)}`;
+        document.querySelector("#distance").textContent = `Relay bearing: NE · ${Math.max(0, distance(p, relay) / 1000).toFixed(1)} km`;
+        const objectiveTitle = document.createElement("strong");
+        objectiveTitle.textContent = state.collected < 3 ? "Restore the valley relay" : "Relay powered · reach the tower";
+        document.querySelector("#objective").replaceChildren(
+          objectiveTitle,
+          document.createTextNode(state.collected < 3
+            ? `Find 3 supply caches (${state.collected}/3), then reach the radio tower in the north-east.`
+            : "All caches secured. Head to the north-east radio mast and press E.")
+        );
+        const breathCard = document.querySelector("#breath-card");
+        breathCard.classList.toggle("breathing", state.breathing);
+        if (state.breathing) {
+          const phase = Math.floor(state.breathTime % 12 / 4);
+          document.querySelector("#breath-title").textContent = ["Inhale", "Hold", "Exhale"][phase];
+          document.querySelector("#breath-copy").textContent = `${(4 - Math.floor(state.breathTime % 4))}s · keep holding B`;
+        } else if (state.focusUntil > state.elapsed) {
+          document.querySelector("#breath-title").textContent = "Focus held";
+          document.querySelector("#breath-copy").textContent = `${Math.ceil(state.focusUntil - state.elapsed)}s of steady hands`;
+        } else {
+          document.querySelector("#breath-title").textContent = "Controlled breathing";
+          document.querySelector("#breath-copy").textContent = "Hold B · 4s inhale / 4s hold / 4s exhale";
+        }
+      }
+
+      function worldPoint(event) {
+        const rect = canvas.getBoundingClientRect();
+        return { x: (event.clientX - rect.left) * W / rect.width, y: (event.clientY - rect.top) * H / rect.height };
+      }
+
+      function shoot() {
+        const p = state.player;
+        if (!state.running || shootingCooldown > 0) return;
+        if (p.ammo <= 0) { log("Empty magazine. Press R to reload."); shootingCooldown = .35; return; }
+        p.ammo--;
+        shootingCooldown = .32;
+        const cam = camera();
+        const target = { x: pointers.x + cam.x, y: pointers.y + cam.y };
+        const focus = state.breathing || state.focusUntil > state.elapsed ? .2 : 1;
+        const tremor = (Math.pow(1 - p.mental / 100, 1.8) * (p.mental < 10 ? 24 : p.mental < 30 ? 15 : p.mental < 55 ? 8 : p.mental < 80 ? 3 : .5) + p.pain / 15 + p.shock / 20) * focus;
+        const angle = Math.atan2(target.y - p.y, target.x - p.x) + (Math.random() - .5) * tremor * .035;
+        const hit = state.enemies.find((enemy) => enemy.alive && distance(enemy, p) < 510 && Math.abs(Math.atan2(Math.sin(Math.atan2(enemy.y - p.y, enemy.x - p.x) - angle), Math.cos(Math.atan2(enemy.y - p.y, enemy.x - p.x) - angle))) < .09);
+        if (hit) {
+          hit.health--;
+          if (hit.health <= 0) {
+            hit.alive = false;
+            p.mental = clamp(p.mental - (hit.type === "wolf" ? 4 : 2), 0, 100);
+            log(hit.type === "wolf" ? "Predator down. The silence feels worse." : "Hostile down. Your hands are still shaking.");
+          }
+        }
+      }
+
+      function interact() {
+        if (!state.running) return;
+        const p = state.player;
+        const cache = state.caches.find((item) => !item.taken && distance(item, p) < 70);
+        if (cache) {
+          cache.taken = true;
+          state.collected++;
+          p.reserve += 8;
+          p.bandages++;
+          if (state.collected % 2 === 0) p.rations++;
+          log(`Supply cache recovered (${state.collected}/3). Ammunition and medical supplies secured.`);
+          return;
+        }
+        if (distance(p, relay) < 110 && state.collected >= 3) {
+          state.won = true;
+          state.running = false;
+          overlay.hidden = false;
+          document.querySelector("#overlay-title").textContent = "Signal found.";
+          document.querySelector("#overlay-copy").textContent = "The relay is alive again. A voice answers through the static. You made it through the valley with your head still yours.";
+          document.querySelector("#start-button").textContent = "PLAY AGAIN";
+          log("Relay online. Someone answered.");
+          return;
+        }
+        if (distance(p, camp) < camp.radius) {
+          p.mental = clamp(p.mental + 9, 0, 100);
+          p.health = clamp(p.health + 7, 0, 100);
+          p.stamina = 100;
+          log("You sit by the fire. Warmth steadies your breathing.");
+          return;
+        }
+        const nearest = state.caches.reduce((best, item) => !item.taken && distance(item, p) < distance(best || { x: Infinity, y: Infinity }, p) ? item : best, null);
+        if (nearest && distance(nearest, p) < 170) log("Supply cache nearby. Move closer and press E to search.");
+        else log("Nothing close enough to interact with.");
+      }
+
+      function inflictWound(site, type) {
+        const p = state.player;
+        const severityRoll = Math.random();
+        const severe = severityRoll < .22;
+        const moderate = severityRoll < .72;
+        const bleeding = type === "bite" ? (severe ? .6 : .32) : severe ? .9 : moderate ? .55 : .28;
+        const severity = severe ? "severe" : moderate ? "moderate" : "minor";
+        p.wounds.push({ site, type, severity, bleeding, dressed: false, tourniquet: false });
+        p.pain = clamp(p.pain + (severe ? 34 : moderate ? 23 : 14), 0, 100);
+        p.shock = clamp(p.shock + (severe ? 29 : moderate ? 20 : 12), 0, 100);
+        log(`${type === "bite" ? "Bite" : "Gunshot"} wound: ${site.toLowerCase()}, ${severity} bleeding. Treat it now.`);
+      }
+
+      function useBandage() {
+        const p = state.player;
+        if (!state.running) return;
+        const wound = p.wounds.find((item) => item.bleeding > .02 && !item.tourniquet);
+        if (p.bandages && wound) {
+          p.bandages--;
+          wound.bleeding *= .18;
+          wound.dressed = true;
+          p.pain = clamp(p.pain - 8, 0, 100);
+          p.shock = clamp(p.shock - 4, 0, 100);
+          log(`Pressure dressing applied to ${wound.site.toLowerCase()}. Blood loss slowed; lost blood is not restored.`);
+        } else log(p.bandages ? "No actively bleeding wound needs a dressing." : "No bandages left.");
+      }
+
+      function useTourniquet() {
+        const p = state.player;
+        if (!state.running) return;
+        const wound = p.wounds.find((item) => item.bleeding >= .5 && !item.tourniquet && item.site !== "TORSO");
+        if (p.tourniquets && wound) {
+          p.tourniquets--;
+          wound.bleeding = 0;
+          wound.tourniquet = true;
+          p.shock = clamp(p.shock - 6, 0, 100);
+          log(`Tourniquet secured above the ${wound.site.toLowerCase()} wound. Severe limb bleeding stopped.`);
+        } else log(p.tourniquets ? "No severe limb wound needs a tourniquet." : "No tourniquet left.");
+      }
+
+      function update(dt) {
+        visualTime += dt;
+        shootingCooldown = Math.max(0, shootingCooldown - dt);
+        if (!state.running) return;
+        state.elapsed += dt;
+        const p = state.player;
+        const moving = ["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].some((key) => keys.has(key));
+        const sprinting = keys.has("shift") && p.stamina > 1 && moving;
+        const speed = (sprinting ? 245 : 155) * (p.shock > 60 ? .72 : 1);
+        let dx = (keys.has("d") || keys.has("arrowright") ? 1 : 0) - (keys.has("a") || keys.has("arrowleft") ? 1 : 0);
+        let dy = (keys.has("s") || keys.has("arrowdown") ? 1 : 0) - (keys.has("w") || keys.has("arrowup") ? 1 : 0);
+        const length = Math.hypot(dx, dy) || 1;
+        dx /= length; dy /= length;
+        p.x = clamp(p.x + dx * speed * dt, 28, world.width - 28);
+        p.y = clamp(p.y + dy * speed * dt, 28, world.height - 28);
+        p.stamina = clamp(p.stamina + (sprinting ? -22 : 13) * dt, 0, 100);
+        p.hunger = clamp(p.hunger - .09 * dt, 0, 100);
+        p.water = clamp(p.water - .14 * dt, 0, 100);
+        if (p.hunger <= 0 || p.water <= 0) p.health = clamp(p.health - 1.4 * dt, 0, 100);
+
+        const inSafeZone = safe();
+        if (inSafeZone) p.mental = clamp(p.mental + .7 * dt, 0, 100);
+        else if (night()) p.mental = clamp(p.mental - .1 * dt, 0, 100);
+        if (p.health < 45) p.mental = clamp(p.mental - .2 * dt, 0, 100);
+        const bleeding = p.wounds.reduce((total, wound) => total + wound.bleeding, 0);
+        p.blood = clamp(p.blood - bleeding * dt, 0, 100);
+        if (p.blood < 78) p.shock = clamp(p.shock + (78 - p.blood) * .0015 * dt, 0, 100);
+        else p.shock = clamp(p.shock - (inSafeZone ? .22 : .07) * dt, 0, 100);
+        if (p.blood < 55) p.health = clamp(p.health - (55 - p.blood) * .035 * dt, 0, 100);
+        if (p.pain > 60) p.mental = clamp(p.mental - .2 * dt, 0, 100);
+        p.pain = clamp(p.pain - (inSafeZone ? .12 : .035) * dt, 0, 100);
+        if (state.breathing) {
+          state.breathTime += dt;
+          p.stamina = clamp(p.stamina + 5 * dt, 0, 100);
+          if (state.breathTime >= 12) {
+            state.breathing = false;
+            state.focusUntil = state.elapsed + 15;
+            p.mental = clamp(p.mental + 5, 0, 100);
+            log("Breathing cycle complete. Hands steady for 15 seconds.");
+          }
+        }
+        if (state.focusUntil <= state.elapsed) state.focusUntil = 0;
+
+        for (const enemy of state.enemies) {
+          if (!enemy.alive || inSafeZone) continue;
+          const d = distance(enemy, p);
+          if (enemy.type === "wolf" && d < 330 && d > 38) {
+            enemy.x += (p.x - enemy.x) / d * 45 * dt;
+            enemy.y += (p.y - enemy.y) / d * 45 * dt;
+          }
+          enemy.cooldown -= dt;
+          if (enemy.type === "wolf" && d < 48 && enemy.cooldown <= 0) {
+            inflictWound(Math.random() < .5 ? "LEFT ARM" : "RIGHT LEG", "bite");
+            p.mental = clamp(p.mental - 7, 0, 100);
+            enemy.cooldown = 2.1;
+            state.shaking = .8;
+            log("A predator lunges from the brush. Your heart is pounding.");
+          } else if (enemy.type === "raider" && d < 570 && enemy.cooldown <= 0) {
+            const angle = Math.atan2(p.y - enemy.y, p.x - enemy.x);
+            state.bullets.push({ x: enemy.x, y: enemy.y, vx: Math.cos(angle) * 390, vy: Math.sin(angle) * 390, life: 1.5 });
+            enemy.cooldown = 2.6 + Math.random() * 1.4;
+          }
+        }
+        for (const bullet of state.bullets) {
+          bullet.x += bullet.vx * dt; bullet.y += bullet.vy * dt; bullet.life -= dt;
+          const d = distance(bullet, p);
+          if (d < 17 && !bullet.spent) {
+            const sites = ["LEFT ARM", "RIGHT ARM", "LEFT LEG", "RIGHT LEG", "TORSO"];
+            inflictWound(sites[Math.floor(Math.random() * sites.length)], "gunshot");
+            p.mental = clamp(p.mental - 10, 0, 100);
+            bullet.spent = true; state.shaking = 1;
+            log("You are hit! Find cover and use a bandage.");
+          } else if (d < 52 && !bullet.spent && !bullet.nearMiss) {
+            p.mental = clamp(p.mental - 6, 0, 100);
+            bullet.nearMiss = true;
+            state.shaking = .5;
+            log("A round cracks past your head. Neuro-stability −6.");
+          }
+        }
+        state.bullets = state.bullets.filter((bullet) => bullet.life > 0 && !bullet.spent);
+        state.shaking = Math.max(0, state.shaking - dt);
+
+        if (p.health <= 0) {
+          state.running = false;
+          overlay.hidden = false;
+          document.querySelector("#overlay-title").textContent = "Lost in the valley.";
+          document.querySelector("#overlay-copy").textContent = "The wilderness won this time. Reset your field exercise and try another route.";
+          document.querySelector("#start-button").textContent = "TRY AGAIN";
+        }
+        if (p.mental < 40 && Math.random() < dt * .018) log("A twig snaps somewhere behind you. Nothing there.");
+        updateHud();
+      }
+
+      function draw() {
+        const cam = camera();
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = "#344436";
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = "#3b4937";
+        for (let i = 0; i < 28; i++) {
+          const x = ((i * 173 - cam.x * .17) % (W + 90) + W + 90) % (W + 90) - 45;
+          const y = ((i * 257 - cam.y * .17) % (H + 90) + H + 90) % (H + 90) - 45;
+          ctx.beginPath(); ctx.ellipse(x, y, 42 + (i % 5) * 10, 11 + i % 4 * 3, -.24, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.fillStyle = "#4a4b38";
+        ctx.beginPath();
+        ctx.moveTo(0, H * .78); ctx.lineTo(W * .26, H * .55); ctx.lineTo(W * .61, H * .61); ctx.lineTo(W, H * .39); ctx.lineTo(W, H * .51); ctx.lineTo(W * .63, H * .75); ctx.lineTo(W * .28, H * .7); ctx.lineTo(0, H * .93); ctx.fill();
+
+        ctx.save(); ctx.translate(-cam.x, -cam.y);
+        ctx.fillStyle = "rgba(161, 181, 120, .12)";
+        ctx.beginPath(); ctx.arc(camp.x, camp.y, camp.radius, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "rgba(187, 206, 147, .6)"; ctx.setLineDash([9, 9]); ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(camp.x, camp.y, camp.radius, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = "#5f5540"; ctx.beginPath(); ctx.moveTo(270, 1050); ctx.lineTo(650, 1050); ctx.lineTo(750, 1190); ctx.lineTo(350, 1240); ctx.fill();
+        ctx.fillStyle = "#66745a"; ctx.fillRect(352, 1026, 151, 92);
+        ctx.fillStyle = "#8b8064"; ctx.fillRect(501, 1060, 78, 70);
+        const flicker = 1 + Math.sin(visualTime * 9) * .13;
+        ctx.fillStyle = "rgba(238, 155, 75, .16)"; ctx.beginPath(); ctx.arc(570, 1190, 54 * flicker, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#ffb15e"; ctx.beginPath(); ctx.arc(570, 1190, 10 * flicker, 0, Math.PI * 2); ctx.fill();
+        for (const tree of trees) {
+          if (tree.x < cam.x - 30 || tree.x > cam.x + W + 30 || tree.y < cam.y - 30 || tree.y > cam.y + H + 30) continue;
+          ctx.fillStyle = "#243329"; ctx.beginPath(); ctx.arc(tree.x, tree.y + 4, tree.size, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = tree.size > 14 ? "#516445" : "#60724b"; ctx.beginPath(); ctx.arc(tree.x, tree.y, tree.size * .78, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "rgba(178, 179, 126, .12)"; ctx.beginPath(); ctx.arc(tree.x - 3, tree.y - 4, tree.size * .35, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.fillStyle = "#c4b57f"; ctx.beginPath(); ctx.arc(relay.x, relay.y, 26, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#abb78d"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(relay.x, relay.y); ctx.lineTo(relay.x, relay.y - 102); ctx.moveTo(relay.x - 24, relay.y - 55); ctx.lineTo(relay.x + 23, relay.y - 55); ctx.stroke();
+        ctx.fillStyle = "#e7d89a"; ctx.font = "12px sans-serif"; ctx.fillText("RADIO TOWER", relay.x - 42, relay.y + 45);
+        for (const cache of state.caches) if (!cache.taken) {
+          ctx.fillStyle = "#ad9d70"; ctx.fillRect(cache.x - 12, cache.y - 10, 24, 20);
+          ctx.strokeStyle = "#ded0a1"; ctx.lineWidth = 2; ctx.strokeRect(cache.x - 12, cache.y - 10, 24, 20);
+          ctx.fillStyle = "#f0e2b0"; ctx.font = "10px sans-serif"; ctx.fillText("SUPPLY", cache.x - 20, cache.y - 16);
+        }
+        for (const enemy of state.enemies) if (enemy.alive) {
+          ctx.fillStyle = enemy.type === "wolf" ? "#b6a48a" : "#8a5750";
+          ctx.beginPath(); ctx.arc(enemy.x, enemy.y, enemy.type === "wolf" ? 14 : 12, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "#1a211b"; ctx.beginPath(); ctx.arc(enemy.x - 4, enemy.y - 3, 2, 0, Math.PI * 2); ctx.arc(enemy.x + 4, enemy.y - 3, 2, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.fillStyle = "#f3d09a";
+        for (const bullet of state.bullets) { ctx.beginPath(); ctx.arc(bullet.x, bullet.y, 3, 0, Math.PI * 2); ctx.fill(); }
+
+        const p = state.player;
+        const tremor = (Math.pow(1 - p.mental / 100, 1.8) * (p.mental < 10 ? 11 : p.mental < 30 ? 7 : p.mental < 55 ? 4 : p.mental < 80 ? 2 : .2) + p.pain / 30 + p.shock / 40);
+        const focus = state.breathing || state.focusUntil > state.elapsed ? .2 : 1;
+        const jitter = tremor * focus;
+        const jitterX = Math.sin(visualTime * 8.5) * jitter + Math.sin(visualTime * 13.1) * jitter * .4;
+        const jitterY = Math.cos(visualTime * 7.3) * jitter + Math.sin(visualTime * 11.7) * jitter * .35;
+        ctx.fillStyle = "#d1c9a7"; ctx.beginPath(); ctx.arc(p.x, p.y + 3, 13, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#576b58"; ctx.beginPath(); ctx.arc(p.x, p.y - 2, 11, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#d8d3bd"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + Math.cos(Math.atan2(pointers.y - H / 2, pointers.x - W / 2)) * 20, p.y + Math.sin(Math.atan2(pointers.y - H / 2, pointers.x - W / 2)) * 20); ctx.stroke();
+        ctx.restore();
+
+        if (night()) {
+          const gradient = ctx.createRadialGradient(W / 2, H / 2, 75, W / 2, H / 2, 470);
+          gradient.addColorStop(0, "rgba(8, 13, 22, .08)");
+          gradient.addColorStop(1, "rgba(8, 13, 22, .7)");
+          ctx.fillStyle = gradient; ctx.fillRect(0, 0, W, H);
+        }
+        if (state.shaking > 0) {
+          ctx.fillStyle = `rgba(185, 90, 67, ${state.shaking * .1})`;
+          ctx.fillRect(0, 0, W, H);
+        }
+        const reticleX = pointers.x + Math.sin(visualTime * 8.5) * jitterX;
+        const reticleY = pointers.y + Math.cos(visualTime * 7.3) * jitterY;
+        ctx.strokeStyle = "rgba(235, 232, 209, .8)"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(reticleX, reticleY, 8, 0, Math.PI * 2); ctx.moveTo(reticleX - 13, reticleY); ctx.lineTo(reticleX - 5, reticleY); ctx.moveTo(reticleX + 5, reticleY); ctx.lineTo(reticleX + 13, reticleY); ctx.moveTo(reticleX, reticleY - 13); ctx.lineTo(reticleX, reticleY - 5); ctx.moveTo(reticleX, reticleY + 5); ctx.lineTo(reticleX, reticleY + 13); ctx.stroke();
+        if (state.mental < 20 && Math.random() < .025) {
+          ctx.fillStyle = "rgba(12, 16, 14, .8)";
+          ctx.beginPath(); ctx.ellipse(Math.random() < .5 ? 26 : W - 26, 125 + Math.random() * (H - 240), 7, 28, .2, 0, Math.PI * 2); ctx.fill();
+        }
+        if (!safe() && state.running && state.collected < 3) {
+          ctx.fillStyle = "rgba(231, 234, 213, .78)"; ctx.font = "11px sans-serif";
+          const nearest = state.caches.filter((item) => !item.taken).sort((a, b) => distance(a, state.player) - distance(b, state.player))[0];
+          if (nearest && distance(nearest, state.player) < 200) ctx.fillText("E  SEARCH CACHE", W / 2 - 46, H - 27);
+        }
+      }
+
+      function frame(time) {
+        const dt = Math.min(.05, previousTime ? (time - previousTime) / 1000 : 0);
+        previousTime = time;
+        update(dt);
+        draw();
+        requestAnimationFrame(frame);
+      }
+
+      document.querySelector("#start-button").addEventListener("click", () => {
+        state = freshState();
+        state.running = true;
+        keys.clear();
+        overlay.hidden = true;
+        log("Field exercise started. The relay is north-east.");
+        updateHud();
+      });
+      canvas.addEventListener("mousemove", (event) => Object.assign(pointers, worldPoint(event)));
+      canvas.addEventListener("mousedown", (event) => { if (event.button === 0) shoot(); });
+      window.addEventListener("keydown", (event) => {
+        const key = event.key.toLowerCase();
+        if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) event.preventDefault();
+        keys.add(key);
+        if (key === "b" && state.running && !state.breathing && state.focusUntil <= state.elapsed) {
+          state.breathing = true; state.breathTime = 0;
+          log("You begin a controlled breathing cycle. Stay still and keep the rhythm.");
+        }
+        if (event.repeat) return;
+        if (key === "e") interact();
+        if (key === "q") useBandage();
+        if (key === "t") useTourniquet();
+        if (key === "f" && state.running) {
+          if (state.player.rations > 0) {
+            state.player.rations--;
+            state.player.hunger = clamp(state.player.hunger + 28, 0, 100);
+            state.player.mental = clamp(state.player.mental + 12, 0, 100);
+            log("You eat a hot field ration. The warmth brings you back to yourself.");
+          } else log("No food left in your pack.");
+        }
+        if (key === "r" && state.running) {
+          const load = Math.min(12 - state.player.ammo, state.player.reserve);
+          if (load > 0) { state.player.ammo += load; state.player.reserve -= load; log("Magazine reloaded."); }
+          else log("Magazine is already full.");
+        }
+      });
+      window.addEventListener("keyup", (event) => {
+        const key = event.key.toLowerCase();
+        keys.delete(key);
+        if (key === "b" && state.breathing) {
+          state.breathing = false;
+          if (state.breathTime >= 12) state.focusUntil = state.elapsed + 15;
+          else log("Breathing interrupted. Try to complete the full cycle.");
+        }
+      });
+      window.addEventListener("blur", () => { keys.clear(); if (state.breathing) state.breathing = false; });
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>
