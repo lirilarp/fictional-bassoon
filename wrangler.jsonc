@@ -1,0 +1,7 @@
+{
+  "name": "last-light-wilderness",
+  "compatibility_date": "2026-11-24",
+  "assets": {
+    "directory": "./public"
+  }
+}
